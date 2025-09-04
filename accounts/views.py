@@ -1,0 +1,92 @@
+from django.contrib.auth import get_user_model
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
+from .models import User
+
+User = get_user_model()
+
+class RegisterView(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        email = request.data.get('email')
+        full_name = request.data.get('full_name', '')
+
+        if not username or not password or not email:
+            return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(username=username).exists():
+            return Response({"username": ["A user with that username already exists."]}, status=400)
+        if User.objects.filter(email=email).exists():
+            return Response({"email": ["User with this email already exists."]}, status=400)
+
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            email=email,
+            full_name=full_name,
+        )
+
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "full_name": user.full_name,
+            "email": user.email,
+            "is_admin": user.is_admin,
+            "storage_path": user.storage_path,
+        }, status=status.HTTP_201_CREATED)
+
+
+class LoginView(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        if not username or not password:
+            return Response({"error": "Missing credentials"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(username=username).first()
+        if user is None or not user.check_password(password):
+            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }, status=200)
+
+class UserDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, user_id):
+        if not request.user.is_staff:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        user = get_object_or_404(User, id=user_id)
+        user.delete()
+        return Response({"status": f"User {user_id} deleted"}, status=status.HTTP_204_NO_CONTENT)
+
+class UserListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_admin:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        users = User.objects.all()
+        data = [
+            {
+                "id": u.id,
+                "username": u.username,
+                "full_name": u.full_name,
+                "email": u.email,
+                "is_admin": u.is_admin,
+                "storage_path": u.storage_path,
+            }
+            for u in users
+        ]
+        return Response(data)
