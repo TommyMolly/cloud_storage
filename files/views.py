@@ -61,22 +61,24 @@ class FileUploadView(APIView):
             for chunk in uploaded_file.chunks():
                 dest.write(chunk)
 
+        comment = request.data.get("comment", "")
+
         file_obj = File.objects.create(
             owner=request.user,
             file=os.path.join(request.user.storage_path, unique_name),
             name=uploaded_file.name,
             original_name=uploaded_file.name,
             size=uploaded_file.size,
+            comment=comment,  
         )
 
-        logger.info(f"{request.user.username} uploaded file {uploaded_file.name}")
         return Response({
             "id": file_obj.id,
             "name": file_obj.name,
+            "comment": file_obj.comment,
             "file": request.build_absolute_uri(file_obj.file.url),
             "size": file_obj.size,
         }, status=status.HTTP_201_CREATED)
-
 
 # --- Скачивание файла ---
 class FileDownloadView(APIView):

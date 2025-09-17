@@ -6,6 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from .models import User
+from .serializers import UserSerializer
+
 
 User = get_user_model()
 
@@ -90,3 +92,16 @@ class UserListView(APIView):
             for u in users
         ]
         return Response(data)
+
+class ToggleAdminView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, user_id):
+        if not request.user.is_admin:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        user = get_object_or_404(User, id=user_id)
+        user.is_admin = not user.is_admin
+        user.save()
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)

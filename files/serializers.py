@@ -24,6 +24,11 @@ class FileUploadSerializer(serializers.ModelSerializer):
         model = File
         fields = ["file", "comment"]
 
+    def create(self, validated_data):
+        request = self.context.get("request")
+        user = request.user if request else None
+        return File.objects.create(owner=user, **validated_data)
+
 
 class FileRenameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
