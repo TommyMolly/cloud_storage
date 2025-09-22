@@ -1,17 +1,22 @@
+"""Views для работы с пользователями."""
+
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
+from rest_framework_simplejwt.tokens import RefreshToken
+
 from .models import User
 from .serializers import UserSerializer
-
 
 User = get_user_model()
 
 class RegisterView(APIView):
+    """Регистрация нового пользователя."""
+
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -44,6 +49,8 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
+    """ Аутентификация и получение JWT токенов. """
+
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -61,7 +68,10 @@ class LoginView(APIView):
             'access': str(refresh.access_token),
         }, status=200)
 
+
 class UserDeleteView(APIView):
+    """Удаление пользователя (только для администраторов)."""
+
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, user_id):
@@ -72,7 +82,10 @@ class UserDeleteView(APIView):
         user.delete()
         return Response({"status": f"User {user_id} deleted"}, status=status.HTTP_204_NO_CONTENT)
 
+
 class UserListView(APIView):
+    """Получение списка всех пользователей (только для администраторов)."""
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -93,7 +106,10 @@ class UserListView(APIView):
         ]
         return Response(data)
 
+
 class ToggleAdminView(APIView):
+    """Переключение статуса администратора пользователя (только для администраторов)."""
+    
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, user_id):

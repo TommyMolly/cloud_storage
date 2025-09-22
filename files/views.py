@@ -1,3 +1,5 @@
+""" Views для работы с файлами."""
+
 import os
 import uuid
 import logging
@@ -5,18 +7,21 @@ from django.conf import settings
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
+
 from .models import File
-from accounts.models import User
 
 logger = logging.getLogger(__name__)
 
-# --- Список файлов ---
+
 class FileListView(APIView):
+    """Список файлов"""
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -38,12 +43,13 @@ class FileListView(APIView):
             }
             for f in files
         ]
-        logger.info(f"{request.user.username} requested file list")
+        logger.info("%s requested file list", request.user.username)
         return Response(data)
 
 
-# --- Загрузка файла ---
 class FileUploadView(APIView):
+    """Загрузка файла"""
+
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
@@ -80,8 +86,10 @@ class FileUploadView(APIView):
             "size": file_obj.size,
         }, status=status.HTTP_201_CREATED)
 
-# --- Скачивание файла ---
+
 class FileDownloadView(APIView):
+    """Скачивание файла"""
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
@@ -97,12 +105,13 @@ class FileDownloadView(APIView):
             return Response({"error": "File not found"}, status=404)
 
         response = FileResponse(open(file_path, "rb"), as_attachment=True, filename=file_obj.original_name)
-        logger.info(f"{request.user.username} downloaded file {file_obj.name}")
+        logger.info("%s downloaded file %s", request.user.username, file_obj.name)
         return response
 
 
-# --- Переименование файла ---
 class FileRenameView(APIView):
+    """Переименование файла"""
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
@@ -116,12 +125,13 @@ class FileRenameView(APIView):
 
         file_obj.name = new_name
         file_obj.save(update_fields=["name"])
-        logger.info(f"{request.user.username} renamed file {file_obj.id} to {new_name}")
+        logger.info("%s renamed file %s to %s", request.user.username, file_obj.id, new_name)
         return Response({"id": file_obj.id, "name": file_obj.name})
 
 
-# --- Добавление/изменение комментария ---
 class FileCommentView(APIView):
+    """Добавление или изменение комментария к файлу."""
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
@@ -132,12 +142,13 @@ class FileCommentView(APIView):
         comment = request.data.get("comment", "")
         file_obj.comment = comment
         file_obj.save(update_fields=["comment"])
-        logger.info(f"{request.user.username} updated comment for file {file_obj.id}")
+        logger.info("%s updated comment for file %s", request.user.username, file_obj.id)
         return Response({"id": file_obj.id, "comment": file_obj.comment})
 
 
-# --- Удаление файла ---
 class FileDeleteView(APIView):
+    """Удаление файла."""
+
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, pk):
@@ -149,12 +160,13 @@ class FileDeleteView(APIView):
         if os.path.exists(file_path):
             os.remove(file_path)
         file_obj.delete()
-        logger.info(f"{request.user.username} deleted file {pk}")
+        logger.info("%s deleted file %s", request.user.username, pk)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# --- Создание публичной ссылки ---
 class FileSharedView(APIView):
+    """Создание публичной ссылки для файла."""
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
@@ -167,12 +179,13 @@ class FileSharedView(APIView):
             file_obj.save(update_fields=["share_token"])
 
         share_url = request.build_absolute_uri(f"/api/files/shared/{file_obj.share_token}/")
-        logger.info(f"{request.user.username} created share link for file {pk}")
+        logger.info("%s created share link for file %s", request.user.username, pk)
         return Response({"file_id": file_obj.id, "share_url": share_url})
 
 
-# --- Скачивание по публичной ссылке ---
 class FileDownloadSharedView(APIView):
+    """Скачивание файла по публичной ссылке."""
+
     def get(self, request, token):
         file_obj = get_object_or_404(File, share_token=token)
         file_path = os.path.join(settings.MEDIA_ROOT, file_obj.file.name)
@@ -180,5 +193,5 @@ class FileDownloadSharedView(APIView):
             return Response({"error": "File not found"}, status=404)
 
         response = FileResponse(open(file_path, "rb"), as_attachment=True, filename=file_obj.original_name)
-        logger.info(f"Shared file downloaded: {file_obj.id}")
+        logger.info("Shared file downloaded: %s", file_obj.id)
         return response
