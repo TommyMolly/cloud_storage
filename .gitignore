@@ -9,6 +9,7 @@ db.sqlite3
 *.log
 /staticfiles/
 media/
+users/
 
 # Virtual environment
 venv/
@@ -26,3 +27,4 @@ Thumbs.db
 
 # Tests
 test_api.py
+users.json
