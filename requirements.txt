@@ -6,3 +6,6 @@ psycopg2-binary>=2.9,<3.0
 python-dotenv>=1.0
 pylint
 pylint-django
+python-magic-bin; platform_system == "Windows"
+python-magic; platform_system != "Windows"
+django-stubs>=5.1.0

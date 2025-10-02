@@ -84,7 +84,12 @@ class LoginView(APIView):
 
         refresh = RefreshToken.for_user(user)
         return Response(
-            {"refresh": str(refresh), "access": str(refresh.access_token)}, status=200
+            {   
+                "refresh": str(refresh), 
+                "access": str(refresh.access_token),
+                "is_admin": user.is_admin,
+                },
+                status=200
         )
 
 
@@ -152,3 +157,30 @@ class ToggleAdminView(APIView):
         user.save()
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserDetailView(APIView):
+    """REST-представление для операций над пользователем: PATCH/DELETE."""
+
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, user_id):
+        if not request.user.is_admin:
+            return Response({"error": "Нет прав для изменения пользователя"}, status=status.HTTP_403_FORBIDDEN)
+
+        user = get_object_or_404(User, id=user_id)
+        is_admin = request.data.get("is_admin")
+        if is_admin is None:
+            return Response({"error": "Не указано поле is_admin"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.is_admin = bool(is_admin)
+        user.save(update_fields=["is_admin"])
+        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+
+    def delete(self, request, user_id):
+        if not request.user.is_admin:
+            return Response({"error": "Нет прав для удаления пользователей"}, status=status.HTTP_403_FORBIDDEN)
+
+        user = get_object_or_404(User, id=user_id)
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

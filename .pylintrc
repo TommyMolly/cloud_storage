@@ -3,5 +3,6 @@ load-plugins=pylint_django
 
 [MESSAGES CONTROL]
 disable=
+    no-member,
     missing-docstring,
     line-too-long
