@@ -1,5 +1,7 @@
 [MASTER]
 load-plugins=pylint_django
+disable=django-not-configured
+
 
 [MESSAGES CONTROL]
 disable=

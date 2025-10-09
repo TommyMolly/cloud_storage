@@ -26,5 +26,4 @@ Thumbs.db
 *.env
 
 # Tests
-test_api.py
 users.json

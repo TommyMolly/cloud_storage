@@ -1,23 +1,13 @@
-# Базовый образ Python
+# Backend (Django)
 FROM python:3.11-slim
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
-
-# Устанавливаем зависимости для psycopg2 и Pillow
-RUN apt-get update && apt-get install -y \
-    libpq-dev gcc \
-    && apt-get clean
-
-# Копируем зависимости
-COPY requirements.txt /app/
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем проект
-COPY . /app/
+COPY . .
 
-# Собираем статику Django
-RUN python manage.py collectstatic --noinput
+ENV DJANGO_SETTINGS_MODULE=cloud_storage.settings
+ENV PYTHONUNBUFFERED=1
 
-# Запускаем gunicorn (продакшн-сервер)
 CMD ["gunicorn", "cloud_storage.wsgi:application", "--bind", "0.0.0.0:8000"]

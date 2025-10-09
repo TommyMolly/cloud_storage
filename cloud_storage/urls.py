@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import path, include
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -6,7 +7,8 @@ from rest_framework_simplejwt.views import (
 )
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("api/", lambda request: JsonResponse({"message": "API is working"})),
+    path("api/admin/", admin.site.urls),
 
     path('api/accounts/', include('accounts.urls')),
 
